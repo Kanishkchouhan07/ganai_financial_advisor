@@ -8,7 +8,17 @@ st.title("GANAI Financial Advisor")
 
 # Get backend URL from environment variable or use localhost as fallback
 default_backend_url = "http://127.0.0.1:5001/api/predict"
-raw_backend_url = os.environ.get("BACKEND_URL", default_backend_url)
+
+# Check for BACKEND_URL environment variable
+raw_backend_url = os.environ.get("BACKEND_URL", "")
+
+# If not set, try to construct it from BACKEND_URL_HOST
+if not raw_backend_url:
+    backend_host = os.environ.get("BACKEND_URL_HOST", "")
+    if backend_host:
+        raw_backend_url = f"https://{backend_host}/api/predict"
+    else:
+        raw_backend_url = default_backend_url
 
 # Ensure the backend URL has the correct format
 if raw_backend_url.endswith('/api/predict'):
@@ -29,6 +39,11 @@ with st.sidebar:
     # Extract base URL for testing
     base_url = BACKEND_URL.split('/api/')[0]
     st.write(f"Base URL: {base_url}")
+    
+    # Show environment variables for debugging
+    with st.expander("Environment Variables"):
+        st.write("BACKEND_URL: ", os.environ.get("BACKEND_URL", "Not set"))
+        st.write("BACKEND_URL_HOST: ", os.environ.get("BACKEND_URL_HOST", "Not set"))
     
     # Allow manual override for testing
     use_manual_url = st.checkbox("Override backend URL")

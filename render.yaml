@@ -18,9 +18,10 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: cd ganai_financial_advisor && streamlit run frontend/app.py --server.port $PORT --server.address 0.0.0.0
     envVars:
-      - key: BACKEND_URL
+      - key: BACKEND_URL_HOST
         fromService:
           name: ganai-financial-advisor-backend
           type: web
-          property: url
-        value: ${BACKEND_URL}/api/predict 
+          property: host
+      - key: BACKEND_URL
+        value: https://$BACKEND_URL_HOST/api/predict 
