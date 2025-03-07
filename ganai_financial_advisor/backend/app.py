@@ -1,20 +1,24 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)  # Allow requests from frontend
 
-@app.route('/predict', methods=['POST'])
+@app.route('/api/predict', methods=['POST'])
 def predict():
     try:
         data = request.get_json()
-        if data is None:
-            return jsonify({"error": "No data received"}), 400
+        if not data or 'input_data' not in data:
+            return jsonify({'error': 'Invalid input data'}), 400
         
-        # Your ML prediction logic here
-        result = {"response": "Your prediction result"}
+        input_text = data['input_data']
         
-        return jsonify(result)  # Ensure JSON response
+        # Dummy prediction logic
+        response_text = f"Prediction for input: {input_text}"
+
+        return jsonify({'response': response_text})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)

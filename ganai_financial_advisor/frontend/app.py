@@ -1,21 +1,23 @@
 import streamlit as st
 import requests
 
+BACKEND_URL = "http://127.0.0.1:5001/api/predict"  # Ensure this matches backend
+
 st.title("GANAI Financial Advisor")
 
-# Example payload (modify as needed)
-payload = {"input_data": "test"}
+user_input = st.text_input("Enter your query:")
 
-# Send request to backend
-response = requests.post("http://127.0.0.1:5000/predict", json=payload)
-
-# Debugging: Print response details
-st.write("Response Status Code:", response.status_code)
-st.write("Raw Response Text:", response.text)  # Show raw text response
-
-# Attempt to parse JSON (only if response is not empty)
-try:
-    json_response = response.json()
-    st.write(json_response["response"])
-except requests.exceptions.JSONDecodeError:
-    st.error("Error: Response is not valid JSON. Check the backend.")
+if st.button("Get Advice"):
+    if user_input:
+        try:
+            response = requests.post(BACKEND_URL, json={"input_data": user_input})
+            
+            # Check status code
+            if response.status_code == 200:
+                st.write("Response:", response.json().get("response", "No response"))
+            else:
+                st.error(f"Error {response.status_code}: {response.text}")
+        except requests.exceptions.ConnectionError:
+            st.error("Error: Unable to connect to backend. Ensure Flask is running.")
+    else:
+        st.warning("Please enter some input before submitting.")
