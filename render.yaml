@@ -1,0 +1,26 @@
+services:
+  # Backend service
+  - type: web
+    name: ganai-financial-advisor-backend
+    env: python
+    buildCommand: pip install -r ganai_financial_advisor/backend/requirements.txt
+    startCommand: cd ganai_financial_advisor && gunicorn backend.app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PORT
+        value: 5001
+
+  # Frontend service
+  - type: web
+    name: ganai-financial-advisor-frontend
+    env: python
+    buildCommand: pip install -r ganai_financial_advisor/frontend/requirements.txt
+    startCommand: cd ganai_financial_advisor && streamlit run frontend/app.py --server.port $PORT --server.address 0.0.0.0
+    envVars:
+      - key: BACKEND_URL
+        fromService:
+          name: ganai-financial-advisor-backend
+          type: web
+          property: url
+        value: ${BACKEND_URL}/api/predict 

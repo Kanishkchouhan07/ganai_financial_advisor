@@ -1,0 +1,1 @@
+web: cd ganai_financial_advisor && gunicorn backend.app:app 

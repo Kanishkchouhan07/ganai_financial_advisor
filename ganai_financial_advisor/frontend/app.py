@@ -6,22 +6,9 @@ import traceback
 
 st.title("GANAI Financial Advisor")
 
-# TEMPORARY: Hardcoded backend URL for testing
-# IMPORTANT: Replace this with your actual backend URL
-BACKEND_URL = "https://your-actual-backend-url.com/api/predict"
-
-# Comment out the dynamic URL detection for now
-"""
-# Get backend URL from environment variable, secrets, or use localhost as fallback
+# Get backend URL from environment variable or use localhost as fallback
 default_backend_url = "http://127.0.0.1:5001/api/predict"
-
-# Try to get from secrets first (for Streamlit Cloud)
-try:
-    BACKEND_URL = st.secrets.get("BACKEND_URL", os.environ.get("BACKEND_URL", default_backend_url))
-except Exception:
-    # Fall back to environment variable if secrets not available
-    BACKEND_URL = os.environ.get("BACKEND_URL", default_backend_url)
-"""
+BACKEND_URL = os.environ.get("BACKEND_URL", default_backend_url)
 
 # Debug information in sidebar
 with st.sidebar:
