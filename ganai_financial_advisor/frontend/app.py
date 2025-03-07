@@ -131,7 +131,7 @@ with st.sidebar:
                     # Set the query and category when clicked
                     st.session_state.query_input = item['query']
                     st.session_state.selected_category = item['category']
-                    st.experimental_rerun()
+                    st.rerun()
             with col2:
                 st.caption(item['category'])
     
@@ -173,7 +173,7 @@ for i, category in enumerate(st.session_state.categories):
             type="primary" if st.session_state.selected_category == category["id"] else "secondary"
         ):
             st.session_state.selected_category = category["id"]
-            st.experimental_rerun()
+            st.rerun()
 
 st.markdown(f"<h3>Ask about {next((c['name'] for c in st.session_state.categories if c['id'] == st.session_state.selected_category), 'Financial Advice')}</h3>", unsafe_allow_html=True)
 
@@ -352,7 +352,7 @@ for i, question in enumerate(current_samples):
     with cols[i]:
         if st.button(question, key=f"sample_{i}"):
             st.session_state.query_input = question
-            st.experimental_rerun()
+            st.rerun()
 
 # Footer
 st.markdown("---")
