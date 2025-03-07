@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Allow requests from frontend
+# Enable CORS for all domains to ensure Streamlit can connect
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/api/predict', methods=['POST'])
 def predict():
@@ -30,7 +31,18 @@ def predict():
 def health_check():
     return jsonify({'status': 'healthy'}), 200
 
+# Simple test endpoint that doesn't require any input
+@app.route('/test', methods=['GET'])
+def test():
+    return jsonify({
+        'message': 'Backend is running correctly',
+        'environment': os.environ.get('FLASK_ENV', 'not set'),
+        'version': '1.0'
+    })
+
 if __name__ == '__main__':
     # Get port from environment variable or use default
     port = int(os.environ.get('PORT', 5001))
+    # Print startup message
+    print(f"Starting backend server on port {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
