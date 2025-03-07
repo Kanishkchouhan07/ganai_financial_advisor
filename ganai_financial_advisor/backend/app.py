@@ -10,6 +10,19 @@ app = Flask(__name__)
 # Enable CORS for all domains to ensure Streamlit can connect
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+# Root route for basic verification
+@app.route('/', methods=['GET'])
+def root():
+    return jsonify({
+        'status': 'online',
+        'message': 'GANAI Financial Advisor API is running',
+        'endpoints': {
+            'health': '/health',
+            'test': '/test',
+            'predict': '/api/predict (POST)'
+        }
+    })
+
 @app.route('/api/predict', methods=['POST'])
 def predict():
     try:
@@ -39,6 +52,20 @@ def test():
         'environment': os.environ.get('FLASK_ENV', 'not set'),
         'version': '1.0'
     })
+
+# Handle 404 errors
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({
+        'error': 'Not found',
+        'message': 'The requested URL was not found on the server.',
+        'available_endpoints': [
+            '/',
+            '/health',
+            '/test',
+            '/api/predict (POST)'
+        ]
+    }), 404
 
 if __name__ == '__main__':
     # Get port from environment variable or use default

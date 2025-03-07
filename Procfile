@@ -1,1 +1,1 @@
-web: cd ganai_financial_advisor && gunicorn backend.app:app 
+web: cd ganai_financial_advisor && python -m gunicorn backend.app:app --bind 0.0.0.0:$PORT 

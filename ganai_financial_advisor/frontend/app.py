@@ -8,14 +8,27 @@ st.title("GANAI Financial Advisor")
 
 # Get backend URL from environment variable or use localhost as fallback
 default_backend_url = "http://127.0.0.1:5001/api/predict"
-BACKEND_URL = os.environ.get("BACKEND_URL", default_backend_url)
+raw_backend_url = os.environ.get("BACKEND_URL", default_backend_url)
+
+# Ensure the backend URL has the correct format
+if raw_backend_url.endswith('/api/predict'):
+    BACKEND_URL = raw_backend_url
+elif raw_backend_url.endswith('/'):
+    BACKEND_URL = f"{raw_backend_url}api/predict"
+else:
+    BACKEND_URL = f"{raw_backend_url}/api/predict"
 
 # Debug information in sidebar
 with st.sidebar:
     st.subheader("Connection Settings")
     
     # Show current backend URL
-    st.write(f"Current Backend URL: {BACKEND_URL}")
+    st.write(f"Raw Backend URL: {raw_backend_url}")
+    st.write(f"Formatted Backend URL: {BACKEND_URL}")
+    
+    # Extract base URL for testing
+    base_url = BACKEND_URL.split('/api/')[0]
+    st.write(f"Base URL: {base_url}")
     
     # Allow manual override for testing
     use_manual_url = st.checkbox("Override backend URL")
@@ -33,20 +46,28 @@ with st.sidebar:
     # Show connection status
     if st.button("Test Connection"):
         try:
-            # Extract base URL for health check
-            base_url = BACKEND_URL
-            if '/api/' in base_url:
-                base_url = base_url.split('/api/')[0]
+            # Test root endpoint first
+            root_url = base_url
+            st.write(f"Testing root URL: {root_url}")
             
-            health_url = f"{base_url}/health"
-            response = requests.get(health_url, timeout=5)
-            
-            if response.status_code == 200:
-                st.success("Backend connection successful!")
+            root_response = requests.get(root_url, timeout=10)
+            if root_response.status_code == 200:
+                st.success(f"Root endpoint accessible: {root_response.json()}")
             else:
-                st.error(f"Backend returned error: {response.status_code}")
+                st.warning(f"Root endpoint returned: {root_response.status_code}")
+                
+            # Then test health endpoint
+            health_url = f"{base_url}/health"
+            st.write(f"Testing health URL: {health_url}")
+            
+            health_response = requests.get(health_url, timeout=10)
+            if health_response.status_code == 200:
+                st.success(f"Health endpoint accessible: {health_response.json()}")
+            else:
+                st.error(f"Health endpoint error: {health_response.status_code}")
         except Exception as e:
             st.error(f"Connection failed: {str(e)}")
+            st.code(traceback.format_exc())
 
 # Main app interface
 user_input = st.text_input("Enter your query:")
@@ -55,11 +76,14 @@ if st.button("Get Advice"):
     if user_input:
         try:
             with st.spinner("Connecting to backend..."):
+                st.write(f"Sending request to: {BACKEND_URL}")
+                
                 # Add timeout to prevent long waiting
                 response = requests.post(
                     BACKEND_URL, 
                     json={"input_data": user_input},
-                    timeout=15  # 15 second timeout
+                    timeout=15,  # 15 second timeout
+                    headers={"Content-Type": "application/json"}
                 )
             
             # Check status code
