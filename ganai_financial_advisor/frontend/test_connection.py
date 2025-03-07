@@ -5,55 +5,17 @@ import json
 
 st.title("Backend Connection Test")
 
-# Get backend URL from different sources
-default_backend_url = "http://127.0.0.1:5001/api/predict"
+# TEMPORARY: Hardcoded backend URL for testing
+# IMPORTANT: Replace this with your actual backend URL
+BACKEND_BASE_URL = "https://your-actual-backend-url.com"
 
-# Try different sources for the backend URL
-sources = {
-    "Environment Variable": os.environ.get("BACKEND_URL", None),
-    "Streamlit Secrets": None
-}
-
-# Try to get from Streamlit secrets
-try:
-    sources["Streamlit Secrets"] = st.secrets.get("BACKEND_URL", None)
-except Exception:
-    pass
-
-# Display all sources
-st.write("### Backend URL Sources")
-for source_name, source_value in sources.items():
-    if source_value:
-        st.success(f"{source_name}: {source_value}")
-    else:
-        st.error(f"{source_name}: Not found")
-
-# Determine the actual URL to use (prioritize secrets, then env var, then default)
-raw_backend_url = None
-if sources["Streamlit Secrets"]:
-    raw_backend_url = sources["Streamlit Secrets"]
-    st.info("Using URL from Streamlit Secrets")
-elif sources["Environment Variable"]:
-    raw_backend_url = sources["Environment Variable"]
-    st.info("Using URL from Environment Variable")
-else:
-    raw_backend_url = default_backend_url
-    st.warning(f"Using default URL: {default_backend_url}")
-
-# Extract the base URL (remove the endpoint path if present)
-if '/api/' in raw_backend_url:
-    BACKEND_BASE_URL = raw_backend_url.split('/api/')[0]
-else:
-    BACKEND_BASE_URL = raw_backend_url
-
-if BACKEND_BASE_URL.endswith('/'):
-    BACKEND_BASE_URL = BACKEND_BASE_URL[:-1]
-
-st.write(f"Extracted base URL: {BACKEND_BASE_URL}")
+st.write("### Using Hardcoded Backend URL")
+st.write(f"Backend URL: {BACKEND_BASE_URL}")
 
 # Manual override option
 st.write("### Manual Override")
-manual_url = st.text_input("Enter backend URL manually (leave empty to use detected URL):", 
+manual_url = st.text_input("Enter backend URL manually:", 
+                          value=BACKEND_BASE_URL,
                           placeholder="https://your-backend-url.com")
 
 if manual_url:
