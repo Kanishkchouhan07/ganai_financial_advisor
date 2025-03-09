@@ -7,6 +7,11 @@ from datetime import datetime, timedelta
 import plotly
 import plotly.graph_objs as go
 import pandas as pd
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -15,12 +20,11 @@ if os.environ.get('FLASK_ENV') == 'production':
     app.config.update(
         SECRET_KEY=os.environ.get('SECRET_KEY', os.urandom(24)),
         SESSION_TYPE='filesystem',
-        SESSION_FILE_DIR='/tmp/flask_session',  # Use /tmp in production
+        SESSION_FILE_DIR='/tmp/flask_session',
         SESSION_PERMANENT=False,
         PERMANENT_SESSION_LIFETIME=timedelta(days=1)
     )
 else:
-    # Development configuration
     app.config.update(
         SECRET_KEY=os.urandom(24),
         SESSION_TYPE='filesystem',
@@ -39,22 +43,30 @@ Session(app)
 BACKEND_URL = os.environ.get("BACKEND_URL", "http://127.0.0.1:5001/api/predict")
 BASE_URL = BACKEND_URL.rsplit('/api/predict', 1)[0]
 
+logger.info(f"Backend URL: {BACKEND_URL}")
+logger.info(f"Base URL: {BASE_URL}")
+
 # Add error handling for backend connection
 def is_backend_healthy():
     try:
         response = requests.get(f"{BASE_URL}/health", timeout=5)
         return response.status_code == 200
-    except:
+    except Exception as e:
+        logger.error(f"Backend health check failed: {str(e)}")
         return False
 
 def fetch_categories():
     try:
+        logger.info(f"Fetching categories from: {BASE_URL}/api/categories")
         response = requests.get(f"{BASE_URL}/api/categories", timeout=10)
         if response.status_code == 200:
-            return response.json().get("categories", [])
+            categories = response.json().get("categories", [])
+            logger.info(f"Successfully fetched {len(categories)} categories")
+            return categories
+        logger.error(f"Failed to fetch categories. Status code: {response.status_code}")
         return []
     except Exception as e:
-        print(f"Error fetching categories: {str(e)}")
+        logger.error(f"Error fetching categories: {str(e)}")
         return []
 
 def create_stock_visualization():
@@ -81,6 +93,11 @@ def index():
     if 'history' not in session:
         session['history'] = []
     
+    # Check backend health
+    backend_healthy = is_backend_healthy()
+    if not backend_healthy:
+        logger.warning("Backend service is not healthy")
+    
     categories = fetch_categories()
     if not categories:
         categories = [
@@ -101,7 +118,8 @@ def index():
         history=reversed(session['history'][-10:]),
         backend_url=BACKEND_URL,
         base_url=BASE_URL,
-        graphJSON=graphJSON
+        graphJSON=graphJSON,
+        backend_healthy=backend_healthy
     )
 
 @app.route('/submit', methods=['POST'])
@@ -113,6 +131,7 @@ def submit_query():
         return jsonify({'error': 'No query provided'}), 400
     
     try:
+        logger.info(f"Sending query to backend: {BACKEND_URL}")
         response = requests.post(
             BACKEND_URL,
             json={
@@ -123,12 +142,13 @@ def submit_query():
             headers={"Content-Type": "application/json"}
         )
         
+        logger.info(f"Backend response status: {response.status_code}")
+        
         if response.status_code == 200:
             response_data = response.json()
             advice = response_data.get("response", "No response")
             category = response_data.get("category", category)
             
-            # Add to history
             if 'history' not in session:
                 session['history'] = []
             
@@ -147,10 +167,26 @@ def submit_query():
                 'graphJSON': create_stock_visualization() if category == 'stocks' else None
             })
         else:
-            return jsonify({'error': 'Backend service error'}), response.status_code
+            error_msg = f"Backend service error: {response.status_code}"
+            logger.error(error_msg)
+            try:
+                error_msg = response.json().get('error', error_msg)
+            except:
+                pass
+            return jsonify({'error': error_msg}), response.status_code
             
+    except requests.exceptions.Timeout:
+        error_msg = "Backend service timeout - please try again"
+        logger.error(error_msg)
+        return jsonify({'error': error_msg}), 504
+    except requests.exceptions.ConnectionError:
+        error_msg = "Unable to connect to backend service"
+        logger.error(error_msg)
+        return jsonify({'error': error_msg}), 503
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        error_msg = f"Unexpected error: {str(e)}"
+        logger.error(error_msg)
+        return jsonify({'error': error_msg}), 500
 
 @app.route('/clear-history', methods=['POST'])
 def clear_history():
