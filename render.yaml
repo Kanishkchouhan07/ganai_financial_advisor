@@ -16,7 +16,7 @@ services:
     name: ganai-financial-advisor-frontend
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: cd ganai_financial_advisor && streamlit run frontend/app.py --server.port $PORT --server.address 0.0.0.0
+    startCommand: cd ganai_financial_advisor && python -m gunicorn frontend.app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: BACKEND_URL_HOST
         fromService:
@@ -24,4 +24,8 @@ services:
           type: web
           property: host
       - key: BACKEND_URL
-        value: https://$BACKEND_URL_HOST/api/predict 
+        value: https://$BACKEND_URL_HOST/api/predict
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true 
