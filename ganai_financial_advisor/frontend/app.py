@@ -3,43 +3,49 @@ from flask_session import Session
 import requests
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import plotly
 import plotly.graph_objs as go
 import pandas as pd
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_FILE_DIR'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'flask_session')
+
+# Production configuration
+if os.environ.get('FLASK_ENV') == 'production':
+    app.config.update(
+        SECRET_KEY=os.environ.get('SECRET_KEY', os.urandom(24)),
+        SESSION_TYPE='filesystem',
+        SESSION_FILE_DIR='/tmp/flask_session',  # Use /tmp in production
+        SESSION_PERMANENT=False,
+        PERMANENT_SESSION_LIFETIME=timedelta(days=1)
+    )
+else:
+    # Development configuration
+    app.config.update(
+        SECRET_KEY=os.urandom(24),
+        SESSION_TYPE='filesystem',
+        SESSION_FILE_DIR=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'flask_session'),
+        SESSION_PERMANENT=False,
+        PERMANENT_SESSION_LIFETIME=timedelta(days=1)
+    )
+
+# Create session directory if it doesn't exist
+os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
 
 # Initialize session interface
 Session(app)
 
 # Get backend URL from environment variable or use localhost as fallback
-default_backend_url = "http://127.0.0.1:5001/api/predict"
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://127.0.0.1:5001/api/predict")
+BASE_URL = BACKEND_URL.rsplit('/api/predict', 1)[0]
 
-# Check for BACKEND_URL environment variable
-raw_backend_url = os.environ.get("BACKEND_URL", "")
-
-# If not set, try to construct it from BACKEND_URL_HOST
-if not raw_backend_url:
-    backend_host = os.environ.get("BACKEND_URL_HOST", "")
-    if backend_host:
-        raw_backend_url = f"https://{backend_host}/api/predict"
-    else:
-        raw_backend_url = default_backend_url
-
-# Ensure the backend URL has the correct format
-if raw_backend_url.endswith('/api/predict'):
-    BACKEND_URL = raw_backend_url
-    BASE_URL = raw_backend_url.replace('/api/predict', '')
-elif raw_backend_url.endswith('/'):
-    BACKEND_URL = f"{raw_backend_url}api/predict"
-    BASE_URL = raw_backend_url[:-1]
-else:
-    BACKEND_URL = f"{raw_backend_url}/api/predict"
-    BASE_URL = raw_backend_url
+# Add error handling for backend connection
+def is_backend_healthy():
+    try:
+        response = requests.get(f"{BASE_URL}/health", timeout=5)
+        return response.status_code == 200
+    except:
+        return False
 
 def fetch_categories():
     try:
