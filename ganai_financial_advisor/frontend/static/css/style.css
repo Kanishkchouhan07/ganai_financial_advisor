@@ -4,6 +4,62 @@ body {
     background-color: #f8f9fa;
 }
 
+/* Logo Styles */
+.logo-container {
+    margin-bottom: 1rem;
+}
+
+.custom-logo {
+    display: inline-block;
+    text-align: center;
+}
+
+.logo-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1E88E5, #1565C0);
+    position: relative;
+    margin: 0 auto 10px;
+    box-shadow: 0 4px 10px rgba(30, 136, 229, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.brain-icon {
+    position: absolute;
+    color: white;
+    font-size: 2rem;
+    opacity: 0.9;
+    transform: translateY(-5px);
+}
+
+.chart-icon {
+    position: absolute;
+    color: white;
+    font-size: 1.5rem;
+    opacity: 0.9;
+    transform: translateY(10px);
+}
+
+.logo-text {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1E88E5;
+    letter-spacing: 1px;
+    margin-top: 0.5rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.app-title {
+    font-size: 1.4rem;
+    color: #424242;
+    margin-top: 0.5rem;
+    font-weight: 500;
+}
+
+/* Sidebar */
 .sidebar {
     height: 100vh;
     position: fixed;
@@ -116,6 +172,38 @@ textarea.form-control {
     }
 }
 
+/* Logo Animation */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 4px 10px rgba(30, 136, 229, 0.3);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 6px 15px rgba(30, 136, 229, 0.4);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 4px 10px rgba(30, 136, 229, 0.3);
+    }
+}
+
+.logo-circle:hover {
+    animation: pulse 1.5s infinite;
+}
+
+.brain-icon, .chart-icon {
+    transition: all 0.3s ease;
+}
+
+.logo-circle:hover .brain-icon {
+    transform: translateY(-8px);
+}
+
+.logo-circle:hover .chart-icon {
+    transform: translateY(13px);
+}
+
 /* Responsive Adjustments */
 @media (max-width: 768px) {
     .sidebar {
@@ -131,6 +219,27 @@ textarea.form-control {
     .category-button {
         width: 100%;
         margin-right: 0;
+    }
+
+    .logo-circle {
+        width: 60px;
+        height: 60px;
+    }
+
+    .brain-icon {
+        font-size: 1.5rem;
+    }
+
+    .chart-icon {
+        font-size: 1.2rem;
+    }
+
+    .logo-text {
+        font-size: 1.5rem;
+    }
+
+    .app-title {
+        font-size: 1.2rem;
     }
 }
 
