@@ -26,10 +26,10 @@
                             <h2 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#connectionSettings">
                                     Connection Settings 
-                                    {% if backend_healthy %}
+                                    {% if backend_healthy and openai_configured %}
                                     <span class="badge bg-success ms-2">Connected</span>
                                     {% else %}
-                                    <span class="badge bg-danger ms-2">Disconnected</span>
+                                    <span class="badge bg-danger ms-2">Issue Detected</span>
                                     {% endif %}
                                 </button>
                             </h2>
@@ -37,13 +37,35 @@
                                 <div class="accordion-body">
                                     <p><strong>Backend URL:</strong> {{ backend_url }}</p>
                                     <p><strong>Base URL:</strong> {{ base_url }}</p>
-                                    <p><strong>Status:</strong> 
+                                    <p><strong>Backend Status:</strong> 
                                         {% if backend_healthy %}
                                         <span class="text-success">Connected and healthy</span>
                                         {% else %}
                                         <span class="text-danger">Unable to connect to backend service</span>
                                         {% endif %}
                                     </p>
+                                    <p><strong>OpenAI API:</strong> 
+                                        {% if openai_configured %}
+                                        <span class="text-success">Configured properly</span>
+                                        {% else %}
+                                        <span class="text-danger">Not configured or invalid API key</span>
+                                        {% endif %}
+                                    </p>
+                                    {% if not backend_healthy or not openai_configured %}
+                                    <div class="alert alert-warning mt-3">
+                                        <h6 class="alert-heading">Troubleshooting Steps:</h6>
+                                        <ol class="mb-0">
+                                            {% if not backend_healthy %}
+                                            <li>Check if the backend service is running</li>
+                                            <li>Verify the backend URL is correct</li>
+                                            {% endif %}
+                                            {% if not openai_configured %}
+                                            <li>Verify OpenAI API key is set in backend environment</li>
+                                            <li>Check backend logs for API key validation errors</li>
+                                            {% endif %}
+                                        </ol>
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

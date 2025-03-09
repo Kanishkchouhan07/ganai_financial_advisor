@@ -43,14 +43,34 @@ Session(app)
 BACKEND_URL = os.environ.get("BACKEND_URL", "http://127.0.0.1:5001/api/predict")
 BASE_URL = BACKEND_URL.rsplit('/api/predict', 1)[0]
 
+logger.info(f"Environment: {os.environ.get('FLASK_ENV', 'development')}")
 logger.info(f"Backend URL: {BACKEND_URL}")
 logger.info(f"Base URL: {BASE_URL}")
+
+def verify_backend_configuration():
+    """Verify backend configuration and connectivity"""
+    try:
+        # Check if we can reach the backend
+        response = requests.get(f"{BASE_URL}/test", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            logger.info(f"Backend test response: {data}")
+            return data.get('openai_configured', False)
+        return False
+    except Exception as e:
+        logger.error(f"Backend verification failed: {str(e)}")
+        return False
 
 # Add error handling for backend connection
 def is_backend_healthy():
     try:
         response = requests.get(f"{BASE_URL}/health", timeout=5)
-        return response.status_code == 200
+        is_healthy = response.status_code == 200
+        if is_healthy:
+            logger.info("Backend health check: Healthy")
+        else:
+            logger.warning(f"Backend health check failed with status code: {response.status_code}")
+        return is_healthy
     except Exception as e:
         logger.error(f"Backend health check failed: {str(e)}")
         return False
@@ -64,6 +84,11 @@ def fetch_categories():
             logger.info(f"Successfully fetched {len(categories)} categories")
             return categories
         logger.error(f"Failed to fetch categories. Status code: {response.status_code}")
+        if response.status_code != 404:  # Don't log 404 response content
+            try:
+                logger.error(f"Response content: {response.text}")
+            except:
+                pass
         return []
     except Exception as e:
         logger.error(f"Error fetching categories: {str(e)}")
@@ -93,10 +118,14 @@ def index():
     if 'history' not in session:
         session['history'] = []
     
-    # Check backend health
+    # Check backend health and configuration
     backend_healthy = is_backend_healthy()
+    openai_configured = verify_backend_configuration() if backend_healthy else False
+    
     if not backend_healthy:
         logger.warning("Backend service is not healthy")
+    elif not openai_configured:
+        logger.warning("OpenAI API is not properly configured")
     
     categories = fetch_categories()
     if not categories:
@@ -119,7 +148,8 @@ def index():
         backend_url=BACKEND_URL,
         base_url=BASE_URL,
         graphJSON=graphJSON,
-        backend_healthy=backend_healthy
+        backend_healthy=backend_healthy,
+        openai_configured=openai_configured
     )
 
 @app.route('/submit', methods=['POST'])
@@ -130,8 +160,19 @@ def submit_query():
     if not query:
         return jsonify({'error': 'No query provided'}), 400
     
+    # Verify backend health before proceeding
+    if not is_backend_healthy():
+        return jsonify({'error': 'Backend service is not available'}), 503
+    
+    # Verify OpenAI configuration
+    if not verify_backend_configuration():
+        return jsonify({'error': 'OpenAI API is not properly configured'}), 503
+    
     try:
         logger.info(f"Sending query to backend: {BACKEND_URL}")
+        logger.info(f"Query: {query}")
+        logger.info(f"Category: {category}")
+        
         response = requests.post(
             BACKEND_URL,
             json={
@@ -148,6 +189,8 @@ def submit_query():
             response_data = response.json()
             advice = response_data.get("response", "No response")
             category = response_data.get("category", category)
+            
+            logger.info("Successfully received response from backend")
             
             if 'history' not in session:
                 session['history'] = []
@@ -170,9 +213,11 @@ def submit_query():
             error_msg = f"Backend service error: {response.status_code}"
             logger.error(error_msg)
             try:
-                error_msg = response.json().get('error', error_msg)
+                error_data = response.json()
+                error_msg = error_data.get('error', error_msg)
+                logger.error(f"Backend error details: {error_data}")
             except:
-                pass
+                logger.error(f"Raw response: {response.text}")
             return jsonify({'error': error_msg}), response.status_code
             
     except requests.exceptions.Timeout:
@@ -186,6 +231,7 @@ def submit_query():
     except Exception as e:
         error_msg = f"Unexpected error: {str(e)}"
         logger.error(error_msg)
+        logger.error(f"Exception details: {str(e)}")
         return jsonify({'error': error_msg}), 500
 
 @app.route('/clear-history', methods=['POST'])
