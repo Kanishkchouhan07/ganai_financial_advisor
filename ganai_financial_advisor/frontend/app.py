@@ -11,6 +11,9 @@ import pandas as pd
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'flask_session')
+
+# Initialize session interface
 Session(app)
 
 # Get backend URL from environment variable or use localhost as fallback
@@ -150,5 +153,5 @@ def clear_history():
     return jsonify({'success': True})
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5001))
     app.run(host='0.0.0.0', port=port, debug=False)
